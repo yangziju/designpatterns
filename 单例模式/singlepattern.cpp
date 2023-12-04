@@ -1,56 +1,59 @@
-// 懒汉式
-class Single
-{
+#include <iostream>
+#include <mutex>
+using namespace std;
+
+#define LAZY
+#ifdef LAZY
+
+// 懒汉式写法
+class Singleton {
 private:
-	Single() { }
+    Singleton() {}
+private:
+    static mutex lock;
+    static Singleton* sig;
 public:
-	static Single* inistance()  // 这里为啥是静态函数：非静态成员必须与特定对象对应
-	{
-		if (sig == nullptr)
-			sig = new Single;
-		return sig;
-	}
-private:
-	static Single* sig;	// 这里为啥是静态成员：非静态成员必须与特定对象对应
+    static Singleton* instance() {
+        if (sig == nullptr) {
+            lock_guard<mutex> lk(lock);
+            if (sig == nullptr)
+                sig = new Singleton();
+        }
+        return sig;
+    }
+    Singleton(const Singleton&) = delete;
+	Singleton& operator=(const Singleton&) = delete;
 };
-Single* Single::sig = nullptr;
+Singleton* Singleton::sig = nullptr;
+mutex Singleton::lock; // 内外定义，链接时分配内存
 
+#elif HUNGRY
 
-// 饿汉式
-class Single
-{
+// 饿汉式写法
+class Singleton {
 private:
-	Single() { }
+    Singleton() {}
+private:
+    static Singleton* sig;
 public:
-	static Single* inistance()  // 这里为啥是静态函数：非静态成员必须与特定对象对应
-	{
-		return sig;
-	}
-private:
-	static Single* sig;	// 这里为啥是静态函数：非静态成员必须与特定对象对应
+    static Singleton* instance() {
+        return sig;
+    }
+    Singleton(const Singleton&) = delete;
+	Singleton& operator=(const Singleton&) = delete;
 };
-Single* Single::sig = new Single;
+Singleton* Singleton::sig = new Singleton;
 
+#endif
 
-// 懒汉式
-class Single
+int main()
 {
-private:
-	Single() { }
-public:
-	static Single* inistance()  // 这里为啥是静态函数：非静态成员必须与特定对象对应
-	{
-		// 多线程优化
-		if (sig == nullptr)
-		{
-			unique_lock<mutex> qlock(mtx);
-				if (sig == nullptr)
-					sig = new Single;
-		}
-		return sig;
-	}
-private:
-	static mutex mtx;
-	static Single* sig;	// 这里为啥是静态函数：非静态成员必须与特定对象对应
-};
-Single* Single::sig = nullptr;
+    Singleton * sig = nullptr;
+    sig = Singleton::instance();
+    if (sig) {
+        cout << "instance success" << endl;
+    } else {
+        cout << "instance failed" << endl;
+    }
+    return 0;
+}
